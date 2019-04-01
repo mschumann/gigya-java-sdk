@@ -334,14 +334,14 @@ public class GSRequest {
         logger.write("params", params);
         logger.write("useHTTPS", useHTTPS);
 
-        // Verify conditions met using userKey value.
-        final boolean apiKeyCondition = this.apiKey == null && this.userKey == null;
-        final boolean secretKeyCondition = this.secretKey != null && this.userKey != null;
-
-        if (this.accessToken == null && (apiKeyCondition || secretKeyCondition)) {
-            // Conditions not met.
-            return new GSResponse(this.apiMethod, this.params, 400002, logger);
+        if (this.accessToken == null) {
+            if (this.secretKey == null && this.userKey == null) {
+                return new GSResponse(this.apiMethod, this.params, 400002, logger);
+            } else if (this.secretKey == null && this.apiKey == null) {
+                return new GSResponse(this.apiMethod, this.params, 400002, logger);
+            }
         }
+
         try {
             GSResponse res = sendRequest("POST", this.host, this.path,
                     params, apiKey, secretKey, this.useHTTPS, this.isLoggedIn,
@@ -499,8 +499,7 @@ public class GSRequest {
                             .currentTimeMillis() / 1000)
                             + timestampOffsetSec);
 
-                    String nonce = Long
-                            .toString(System.currentTimeMillis())
+                    String nonce = System.currentTimeMillis()
                             + "_"
                             + randomGenerator.nextInt();
 
@@ -515,7 +514,7 @@ public class GSRequest {
                             baseString, secret);
 
                     params.put("sig", signature);
-                    logger.write("signature", signature);
+                    logger.write("sig", signature);
                 }
             }
 
