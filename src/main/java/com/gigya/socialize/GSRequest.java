@@ -13,7 +13,7 @@ import java.util.zip.GZIPInputStream;
  * This class is used for sending a request to Gigya Service.
  */
 public class GSRequest {
-    public static final String VERSION = "java_3.2.2";
+    public static final String VERSION = "java_3.2.3";
 
     public static boolean ENABLE_CONNECTION_POOLING = true;
 
@@ -334,11 +334,10 @@ public class GSRequest {
         logger.write("params", params);
         logger.write("useHTTPS", useHTTPS);
 
-
-        if (this.accessToken == null &&
-                ((this.apiKey == null && this.userKey == null)
-                        || (this.secretKey == null && this.userKey != null)))
+        // Evaluate request conditions.
+        if (this.accessToken == null && this.secretKey == null && (this.userKey == null || this.apiKey == null)) {
             return new GSResponse(this.apiMethod, this.params, 400002, logger);
+        }
 
         try {
             GSResponse res = sendRequest("POST", this.host, this.path,
@@ -497,8 +496,7 @@ public class GSRequest {
                             .currentTimeMillis() / 1000)
                             + timestampOffsetSec);
 
-                    String nonce = Long
-                            .toString(System.currentTimeMillis())
+                    String nonce = System.currentTimeMillis()
                             + "_"
                             + randomGenerator.nextInt();
 
@@ -513,7 +511,7 @@ public class GSRequest {
                             baseString, secret);
 
                     params.put("sig", signature);
-                    logger.write("signature", signature);
+                    logger.write("sig", signature);
                 }
             }
 
@@ -590,6 +588,7 @@ public class GSRequest {
 
             wr.close();
             rd.close();
+            input.close();
 
             return gsr;
         } catch (Exception ex) {
@@ -600,15 +599,16 @@ public class GSRequest {
                 try {
                     wr.close();
                 } catch (IOException e) {
+                    logger.write(e);
                 }
             if (rd != null)
                 try {
                     rd.close();
                 } catch (IOException e) {
+                    logger.write(e);
                 }
             if (conn != null && !GSRequest.ENABLE_CONNECTION_POOLING)
                 ((HttpURLConnection) conn).disconnect();
-
         }
     }
 
