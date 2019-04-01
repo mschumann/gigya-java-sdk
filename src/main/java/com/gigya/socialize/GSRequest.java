@@ -334,12 +334,9 @@ public class GSRequest {
         logger.write("params", params);
         logger.write("useHTTPS", useHTTPS);
 
-        if (this.accessToken == null) {
-            if (this.secretKey == null && this.userKey == null) {
-                return new GSResponse(this.apiMethod, this.params, 400002, logger);
-            } else if (this.secretKey == null && this.apiKey == null) {
-                return new GSResponse(this.apiMethod, this.params, 400002, logger);
-            }
+        // Evaluate request conditions.
+        if (this.accessToken == null && this.secretKey == null && (this.userKey == null || this.apiKey == null)) {
+            return new GSResponse(this.apiMethod, this.params, 400002, logger);
         }
 
         try {
