@@ -485,10 +485,8 @@ public class GSRequest {
             if (accessToken != null) {
                 params.put("oauth_token", accessToken);
             } else {
-                if (!params.containsKey("oauth_token")) {
-                    if (token != null) {
-                        params.put("apiKey", token);
-                    }
+                if (!params.containsKey("oauth_token") && token != null) {
+                    params.put("apiKey", token);
                 }
 
                 if (this.userKey != null)
