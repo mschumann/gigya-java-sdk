@@ -485,8 +485,11 @@ public class GSRequest {
             if (accessToken != null) {
                 params.put("oauth_token", accessToken);
             } else {
-                if (!params.containsKey("oauth_token"))
-                    params.put("apiKey", token);
+                if (!params.containsKey("oauth_token")) {
+                    if (token != null) {
+                        params.put("apiKey", token);
+                    }
+                }
 
                 if (this.userKey != null)
                     params.put("userKey", this.userKey);
@@ -511,7 +514,7 @@ public class GSRequest {
                             baseString, secret);
 
                     params.put("sig", signature);
-                    logger.write("sig", signature);
+                    logger.write("signature", signature);
                 }
             }
 
