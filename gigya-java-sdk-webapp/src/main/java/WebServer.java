@@ -53,7 +53,7 @@ public class WebServer extends HttpServlet {
             /*
             accounts.getJWTPublicKey endpoint.
              */
-            case "/getPublicKey":
+            case "/getJWTPublicKey":
 
                 // Fetch site public key.
                 jsonRes = _dispatcher.getPublicKey();
@@ -63,7 +63,7 @@ public class WebServer extends HttpServlet {
             /*
              accounts.getAccountInfo endpoint.
              */
-            case "/getAccount":
+            case "/getAccountInfo":
 
                 // Fetch UID from request parameters.
                 final String uid = req.getParameter("UID");

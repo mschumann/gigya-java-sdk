@@ -75,53 +75,45 @@ public class GSAuthRequestUtils {
      */
     public static String composeJwt(String userKey, String privateKey) {
 
-        // get the private key
+        // #1 - Decode RSA private key (PKCS#1).
         PrivateKey key = rsaPrivateKeyFromBase64String(privateKey);
         if (key == null) {
             // Key generation failed.
             return null;
         }
 
-        // Headers
+        // #2 - Add JWT headers.
         final Map<String, Object> header = new HashMap<>();
         header.put("alg", "RS256");
         header.put("typ", "jwt");
         header.put("kid", userKey);
 
-        // Payload.
+        // #3 - Add JWT payload.
         final Map<String, Object> claims = new HashMap<>();
-        claims.put("iat", Calendar.getInstance(
-                TimeZone.getTimeZone("UTC")).getTimeInMillis()
-        ); // UTC.
+        claims.put("iat", Calendar.getInstance(TimeZone.getTimeZone("UTC")).getTimeInMillis()); // UTC.
         claims.put("jti", UUID.randomUUID().toString());
 
-        // Compose Jwt.
-        String signedJwt = Jwts.builder()
+        // #4 - Compose & sign Jwt.
+        return Jwts.builder()
                 .setHeader(header)
                 .signWith(key, SignatureAlgorithm.RS256)
                 .addClaims(claims)
                 .compact();
-
-        // TODO: 2019-07-07  Testing only. remove print line.
-        System.out.println("jwt:");
-        System.out.println(signedJwt);
-
-        return signedJwt;
     }
 
     /**
-     * @param jwt       JWT token to verify
-     * @param apiKey    Account ApiKey
+     * @param jwt    JWT token to verify
+     * @param apiKey Account ApiKey
      * @return UID from given token if verified. Null otherwise.
      */
-    public static String verifyJwt(String jwt, String apiKey, String encodedPublicKey) {
+    public static String verifyJwt(String jwt, String apiKey, String publicKey) {
         try {
             // Generate public key instance.
-            PublicKey publicKey = rsaPublicKeyFromBase64String(encodedPublicKey);
+            PublicKey key = rsaPublicKeyFromBase64String(publicKey);
 
             // Parse token.
             Jws<Claims> claimsJws = Jwts.parser()
-                    .setSigningKey(publicKey)
+                    .setSigningKey(key)
                     .parseClaimsJws(jwt);
 
             // TODO: 2019-07-07  Testing only. remove print line.
@@ -136,9 +128,7 @@ public class GSAuthRequestUtils {
             // #2 - Verify current time is between iat & exp.
             final long iat = claimsJws.getBody().get("iat", Long.class);
             final long exp = claimsJws.getBody().get("exp", Long.class);
-            final long currentTimeInUTC = Calendar.getInstance(
-                    TimeZone.getTimeZone("UTC")
-            ).getTimeInMillis(); // UTC.
+            final long currentTimeInUTC = Calendar.getInstance(TimeZone.getTimeZone("UTC")).getTimeInMillis(); // UTC.
             if (!(currentTimeInUTC >= iat && currentTimeInUTC <= exp)) {
                 return null;
             }

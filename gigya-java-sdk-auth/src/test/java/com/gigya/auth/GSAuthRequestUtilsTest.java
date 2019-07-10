@@ -50,29 +50,9 @@ public class GSAuthRequestUtilsTest {
     public void test_compose() {
         // Act
         final String jws = GSAuthRequestUtils.composeJwt("ANiHp6OEaqFZ", getPrivateKey());
+        System.out.println(jws);
+
         // Assert
         assertNotNull(jws);
     }
-
-    public void test_verify() throws GSKeyNotFoundException {
-        // Prepare
-        final String jws = GSAuthRequestUtils.composeJwt("ANiHp6OEaqFZ", getPrivateKey());
-
-        // Act
-        final GSObject params = new GSObject();
-        params.put("V2", true);
-        final GSRequest request = new GSRequest(
-                "3_eP-lTMvtVwgjBCKCWPgYfeWH4xVkD5Rga15I7aoVvo-S_J5ZRBLg9jLDgJvDJZag",
-                "KtA79ljpc5ursCT7aXyFhnO8/AL2jUlTobBMY4wx4r0=",
-                "accounts.getJWTPublicKey", params);
-        request.setAPIDomain("us1-st1.gigya.com");
-        final GSResponse response = request.send();
-        final GSArray keys = response.getData().getArray("keys");
-        final GSObject key = keys.getObject(0);
-        final String encodedPublicKey = key.getString("n");
-
-        // TODO: 2019-07-10 Logic still missing in base feature.
-
-    }
-
 }
