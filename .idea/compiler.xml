@@ -6,8 +6,16 @@
       <module name="gigya-java-sdk-auth_test" target="1.8" />
       <module name="gigya-java-sdk-SDK_main" target="1.8" />
       <module name="gigya-java-sdk-SDK_test" target="1.8" />
+      <module name="gigya-java-sdk-testapp_main" target="1.8" />
+      <module name="gigya-java-sdk-testapp_test" target="1.8" />
       <module name="gigya-java-sdk-webapp_main" target="1.8" />
       <module name="gigya-java-sdk-webapp_test" target="1.8" />
+      <module name="repository-gigya-java-sdk-SDK_main" target="1.8" />
+      <module name="repository-gigya-java-sdk-SDK_test" target="1.8" />
+      <module name="SDK-gigya-java-sdk-auth_main" target="1.8" />
+      <module name="SDK-gigya-java-sdk-auth_test" target="1.8" />
+      <module name="SDK-gigya-java-sdk-webapp_main" target="1.8" />
+      <module name="SDK-gigya-java-sdk-webapp_test" target="1.8" />
       <module name="SDK_main" target="1.8" />
       <module name="SDK_test" target="1.8" />
     </bytecodeTargetLevel>

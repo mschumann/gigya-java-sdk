@@ -3,6 +3,10 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/SDK.iml" filepath="$PROJECT_DIR$/SDK.iml" group="SDK" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/gigya-java-sdk-auth/SDK-gigya-java-sdk-auth_main.iml" filepath="$PROJECT_DIR$/.idea/modules/gigya-java-sdk-auth/SDK-gigya-java-sdk-auth_main.iml" group="SDK/gigya-java-sdk-auth" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/gigya-java-sdk-auth/SDK-gigya-java-sdk-auth_test.iml" filepath="$PROJECT_DIR$/.idea/modules/gigya-java-sdk-auth/SDK-gigya-java-sdk-auth_test.iml" group="SDK/gigya-java-sdk-auth" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/gigya-java-sdk-webapp/SDK-gigya-java-sdk-webapp_main.iml" filepath="$PROJECT_DIR$/.idea/modules/gigya-java-sdk-webapp/SDK-gigya-java-sdk-webapp_main.iml" group="SDK/gigya-java-sdk-webapp" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/gigya-java-sdk-webapp/SDK-gigya-java-sdk-webapp_test.iml" filepath="$PROJECT_DIR$/.idea/modules/gigya-java-sdk-webapp/SDK-gigya-java-sdk-webapp_test.iml" group="SDK/gigya-java-sdk-webapp" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/SDK_main.iml" filepath="$PROJECT_DIR$/.idea/modules/SDK_main.iml" group="SDK" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/SDK_test.iml" filepath="$PROJECT_DIR$/.idea/modules/SDK_test.iml" group="SDK" />
       <module fileurl="file://$PROJECT_DIR$/gigya-java-sdk.iml" filepath="$PROJECT_DIR$/gigya-java-sdk.iml" />
@@ -11,9 +15,14 @@
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/gigya-java-sdk-auth.iml" filepath="$PROJECT_DIR$/.idea/modules/gigya-java-sdk-auth.iml" group="SDK/gigya-java-sdk-auth" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/gigya-java-sdk-auth/gigya-java-sdk-auth_main.iml" filepath="$PROJECT_DIR$/.idea/modules/gigya-java-sdk-auth/gigya-java-sdk-auth_main.iml" group="SDK/gigya-java-sdk-auth" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/gigya-java-sdk-auth/gigya-java-sdk-auth_test.iml" filepath="$PROJECT_DIR$/.idea/modules/gigya-java-sdk-auth/gigya-java-sdk-auth_test.iml" group="SDK/gigya-java-sdk-auth" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/gigya-java-sdk-testapp.iml" filepath="$PROJECT_DIR$/.idea/modules/gigya-java-sdk-testapp.iml" group="SDK/gigya-java-sdk-testapp" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/gigya-java-sdk-testapp/gigya-java-sdk-testapp_main.iml" filepath="$PROJECT_DIR$/.idea/modules/gigya-java-sdk-testapp/gigya-java-sdk-testapp_main.iml" group="SDK/gigya-java-sdk-testapp" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/gigya-java-sdk-testapp/gigya-java-sdk-testapp_test.iml" filepath="$PROJECT_DIR$/.idea/modules/gigya-java-sdk-testapp/gigya-java-sdk-testapp_test.iml" group="SDK/gigya-java-sdk-testapp" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/gigya-java-sdk-webapp.iml" filepath="$PROJECT_DIR$/.idea/modules/gigya-java-sdk-webapp.iml" group="SDK/gigya-java-sdk-webapp" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/gigya-java-sdk-webapp/gigya-java-sdk-webapp_main.iml" filepath="$PROJECT_DIR$/.idea/modules/gigya-java-sdk-webapp/gigya-java-sdk-webapp_main.iml" group="SDK/gigya-java-sdk-webapp" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/gigya-java-sdk-webapp/gigya-java-sdk-webapp_test.iml" filepath="$PROJECT_DIR$/.idea/modules/gigya-java-sdk-webapp/gigya-java-sdk-webapp_test.iml" group="SDK/gigya-java-sdk-webapp" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/repository-gigya-java-sdk-SDK_main.iml" filepath="$PROJECT_DIR$/.idea/modules/repository-gigya-java-sdk-SDK_main.iml" group="SDK" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/repository-gigya-java-sdk-SDK_test.iml" filepath="$PROJECT_DIR$/.idea/modules/repository-gigya-java-sdk-SDK_test.iml" group="SDK" />
     </modules>
   </component>
 </project>

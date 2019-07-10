@@ -1,4 +1,5 @@
 rootProject.name = 'SDK'
 include 'gigya-java-sdk-auth'
 include 'gigya-java-sdk-webapp'
+include 'gigya-java-sdk-testapp'
 
