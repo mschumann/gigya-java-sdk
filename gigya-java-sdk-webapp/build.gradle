@@ -1,0 +1,24 @@
+plugins {
+    id 'jetty'
+}
+
+archivesBaseName = 'api'
+version 'unspecified'
+
+sourceCompatibility = 1.8
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    testCompile group: 'junit', name: 'junit', version: '4.12'
+
+    compile fileTree(dir: 'src/main/webapp/WEB-INF/lib', include: ['*.jar'])
+
+    compile 'javax.servlet:javax.servlet-api:3.1.0'
+
+    compile 'io.jsonwebtoken:jjwt-api:0.10.5'
+    runtime 'io.jsonwebtoken:jjwt-impl:0.10.5',
+            'io.jsonwebtoken:jjwt-jackson:0.10.5'
+}

@@ -4,9 +4,7 @@ import java.io.*;
 import java.net.*;
 import java.security.InvalidKeyException;
 import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.Locale;
-import java.util.Random;
+import java.util.*;
 import java.util.zip.GZIPInputStream;
 
 /**
@@ -28,10 +26,11 @@ public class GSRequest {
     private String secretKey;
     private GSObject params;
     private GSObject urlEncodedParams;
+    private Map<String, String> additionalHeaders;
     private boolean useHTTPS;
     private boolean isLoggedIn;
     private boolean isRetry = false;
-    private String userKey;
+    protected String userKey;
     protected String apiMethod;
     protected String apiDomain = DEFAULT_API_DOMAIN;
     protected String hostOverride = null;
@@ -103,7 +102,7 @@ public class GSRequest {
      * @param useHTTPS     this parameter determines whether the request to Gigya will be
      *                     sent over HTTP or HTTPS. To send of HTTPS, please set this
      *                     parameter to true. The library uses HTTP (the request is
-     *                     signed with the session's secret key) and only uses HTTPS if
+     *                     auth with the session's secret key) and only uses HTTPS if
      *                     the secret is not present. but you can use this parameter to
      *                     override the decision.
      * @param userKey      A key of an administrative user with extra permissions.
@@ -334,8 +333,16 @@ public class GSRequest {
         logger.write("params", params);
         logger.write("useHTTPS", useHTTPS);
 
-        // Evaluate request conditions.
+
+        // Evaluate request authorization conditions.
+        boolean authConstraint = false;
         if (this.accessToken == null && this.secretKey == null && (this.userKey == null || this.apiKey == null)) {
+            authConstraint = true;
+        }
+        if (additionalHeaders.get("Authorization") != null) {
+            authConstraint = false;
+        }
+        if (authConstraint) {
             return new GSResponse(this.apiMethod, this.params, 400002, logger);
         }
 
@@ -532,6 +539,13 @@ public class GSRequest {
                 conn.setReadTimeout(timeoutMS);
             }
 
+            // Add additional custom headers.
+            if (additionalHeaders != null) {
+                for (Map.Entry<String, String> entry : additionalHeaders.entrySet()) {
+                    conn.setRequestProperty(entry.getKey(), entry.getValue());
+                }
+            }
+
             conn.setRequestProperty("Accept-Encoding", "gzip");
 
             if (GSRequest.ENABLE_CONNECTION_POOLING) {
@@ -642,6 +656,13 @@ public class GSRequest {
         } catch (Exception ex) {
             return null;
         }
+    }
+
+    public void addHeader(String key, String value) {
+        if (additionalHeaders == null) {
+            additionalHeaders = new HashMap<String, String>();
+        }
+        additionalHeaders.put(key, value);
     }
 
 }

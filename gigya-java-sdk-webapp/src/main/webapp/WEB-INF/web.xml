@@ -1,0 +1,16 @@
+<web-app>
+
+    <servlet>
+        <servlet-name>java-sdk-server-test</servlet-name>
+        <servlet-class>WebServer</servlet-class>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>java-sdk-server-test</servlet-name>
+        <url-pattern>/getAccount</url-pattern>
+        <url-pattern>/login</url-pattern>
+        <url-pattern>/register</url-pattern>
+        <url-pattern>/getPublicKey</url-pattern>
+    </servlet-mapping>
+
+</web-app>
