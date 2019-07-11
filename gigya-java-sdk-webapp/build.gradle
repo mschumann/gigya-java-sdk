@@ -1,5 +1,11 @@
+
+// Apply when using VSCode to debug Tomcat.
 apply plugin: 'war'
 apply from: 'https://raw.github.com/gretty-gradle-plugin/gretty/master/pluginScripts/gretty.plugin'
+
+// plugins {
+//     id 'jetty'
+// }
 
 archivesBaseName = 'api'
 version 'unspecified'

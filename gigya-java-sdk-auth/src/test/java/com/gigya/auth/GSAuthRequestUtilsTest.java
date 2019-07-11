@@ -1,6 +1,8 @@
 package com.gigya.auth;
 
-import com.gigya.socialize.*;
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jws;
+import io.jsonwebtoken.Jwts;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.powermock.modules.junit4.PowerMockRunner;
@@ -47,12 +49,50 @@ public class GSAuthRequestUtilsTest {
     }
 
     @Test
+    public void test_rsaPublicKeyFromJWKString() {
+        // Arrange
+        final String jwk = "{\n" +
+                "      \"alg\": \"RS256\",\n" +
+                "      \"kid\": \"REQ0MUQ5N0NCRTJEMzk3M0U1RkNDQ0U0Q0M1REFBRjhDMjdENUFBQg\",\n" +
+                "      \"kty\": \"RSA\",\n" +
+                "      \"n\": \"qoQah4MFGYedrbWwFc3UkC1hpZlnB2_E922yRJfHqpq2tTHL_NvjYmssVdJBgSKi36cptKqUJ0Phui9Z_kk8zMPrPfV16h0ZfBzKsvIy6_d7cWnn163BMz46kAHtZXqXhNuj19IZRCDfNoqVVxxCIYvbsgInbzZM82CB86iYPAS7piijYn1S6hueVHGAzQorOetZevKIAvbH3kJXZ4KdY6Ffz5SFDJBxC3bycN4q2JM1qnyD53vcc0MitxyIUF7a06iJb5_xXBiA-3xnTI0FU5hw_k6x-sdB5Rglx13_2aNzdWBSBAnxs1XXtZUt9_2RAUxP1XORkrBGlPg9D7cBtQ\",\n" +
+                "      \"e\": \"AQAB\",\n" +
+                "      \"use\": \"sig\"\n" +
+                "    }";
+        // Act
+        final PublicKey key = GSAuthRequestUtils.rsaPublicKeyFromJWKString(jwk);
+        // Assert
+        assertNotNull(key);
+        assertEquals("RSA", key.getAlgorithm());
+    }
+
+    @Test
     public void test_compose() {
         // Act
         final String jws = GSAuthRequestUtils.composeJwt("ANiHp6OEaqFZ", getPrivateKey());
         System.out.println(jws);
-
         // Assert
         assertNotNull(jws);
     }
+
+    @Test
+    public void test_generateTokenAndVerify() {
+        // Arrange
+        final PublicKey publicKey = GSAuthRequestUtils.rsaPublicKeyFromBase64String(getPublicKey());
+        // Act
+        final String jws = GSAuthRequestUtils.composeJwt("ANiHp6OEaqFZ", getPrivateKey());
+        final Jws<Claims> claimsJws = Jwts.parser()
+                .setSigningKey(publicKey)
+                .parseClaimsJws(jws);
+        // Assert
+        assertNotNull(claimsJws);
+    }
+
+    @Test(expected = java.lang.IllegalArgumentException.class)
+    public void test_generateTokenAndParseWithoutPublicKey() {
+        // Act
+        final String jws = GSAuthRequestUtils.composeJwt("ANiHp6OEaqFZ", getPrivateKey());
+        final Jws<Claims> claimsJws = Jwts.parser().parseClaimsJws(jws);
+    }
+
 }

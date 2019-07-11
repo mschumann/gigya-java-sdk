@@ -3,20 +3,12 @@ import com.gigya.socialize.GSObject;
 import com.gigya.socialize.GSRequest;
 import com.gigya.socialize.GSResponse;
 
-import javax.servlet.ServletContext;
+class RequestDispatcher {
 
-class RequestDispatcher implements IRequestDispatcher {
+    final private boolean useAuthenticatedRequest;
 
-    final private boolean isGlobal;
-
-    RequestDispatcher(boolean isGlobal) {
-        this.isGlobal = isGlobal;
-    }
-
-    private ServletContext _context;
-
-    void setContext(ServletContext context) {
-       _context = context;
+    RequestDispatcher(boolean useAuthenticatedRequest) {
+        this.useAuthenticatedRequest = useAuthenticatedRequest;
     }
 
     //region APIS
@@ -25,8 +17,6 @@ class RequestDispatcher implements IRequestDispatcher {
     private static final String API_REGISTER = "accounts.register";
     private static final String API_LOGIN = "accounts.login";
     private static final String API_GET_ACCOUNT_INFO = "accounts.getAccountInfo";
-    private static final String API_VERIFY_LOGIN = "accounts.verifyLogin";
-    private static final String API_IS_AVAILABLE_LOGIN_ID = "accounts.isAvailableLoginID";
     private static final String API_GET_JWT_PUBLIC_KEY = "accounts.getJWTPublicKey";
 
     private GSRequest getRequest(String method) {
@@ -34,38 +24,28 @@ class RequestDispatcher implements IRequestDispatcher {
     }
 
     private GSRequest getRequest(String method, GSObject params) {
-        if (this.isGlobal) {
-            GSAuthRequest request = new GSAuthRequest(Defines.ACCOUNT_USER_KEY, Defines.PRIVATE_KEY_GLOBAL, method, params);
-            request.setAPIDomain(Defines.API_DOMAIN_GLOBAL);
+        if (this.useAuthenticatedRequest) {
+            GSAuthRequest request = new GSAuthRequest(Defines.ACCOUNT_USER_KEY, Defines.PRIVATE_KEY, method);
+            request.setParams(params);
+            request.setAPIDomain(Defines.API_DOMAIN);
             return request;
         } else {
-            GSRequest request = new GSRequest(Defines.API_KEY_TEST, Defines.API_SECRET_TEST, method, params);
+            GSRequest request = new GSRequest(Defines.API_KEY, Defines.API_SECRET, method, params);
             request.setAPIDomain(Defines.API_DOMAIN);
             return request;
         }
     }
 
-    @Override
-    public String register(String email, String password, int exp, String profile) {
-
+    String register(final GSObject params) {
         final GSRequest initRegistrationRequest = getRequest(API_INIT_REGISTRATION, null);
-        _context.log("register: initRequest = " + initRegistrationRequest.getMethod());
-
         final GSResponse initRegistrationResponse = initRegistrationRequest.send();
         if (initRegistrationResponse.getErrorCode() == 0) {
-
-            final GSObject params = new GSObject();
-            params.put("email", email);
-            params.put("password", password);
-            params.put("sessionExpiration", exp);
-            params.put("profile", profile);
-
             final String regToken = initRegistrationResponse.getString("regToken", null);
             if (regToken != null) {
                 params.put("regToken", regToken);
                 params.put("finalizeRegistration", true);
+                params.put("include", "id_token");
             }
-
             // Register request.
             final GSRequest registerRequest = getRequest(API_REGISTER, params);
             final GSResponse registerResponse = registerRequest.send();
@@ -79,13 +59,7 @@ class RequestDispatcher implements IRequestDispatcher {
         }
     }
 
-    @Override
-    public String login(String loginId, String password) {
-        final GSObject params = new GSObject();
-        params.put("loginID", loginId);
-        params.put("password", password);
-        params.put("include", "profile,data,subscriptions,preferences");
-
+    String login(final GSObject params) {
         final GSRequest request = getRequest(API_LOGIN, params);
         final GSResponse response = request.send();
         if (response.getErrorCode() == 0) {
@@ -95,10 +69,9 @@ class RequestDispatcher implements IRequestDispatcher {
         }
     }
 
-    @Override
-    public String getAccountInfo(String uid) {
+    String getAccountInfo(final GSObject params) {
         final GSRequest request = getRequest(API_GET_ACCOUNT_INFO);
-        request.setParam("uid", uid); // toolmarmel.alt1@gmail.com
+        request.setParams(params);
         final GSResponse response = request.send();
         if (response.getErrorCode() == 0) {
             return response.getData().toJsonString();
@@ -107,33 +80,7 @@ class RequestDispatcher implements IRequestDispatcher {
         }
     }
 
-    @Override
-    public String verifyLogin(String uid) {
-        final GSRequest request = getRequest(API_VERIFY_LOGIN);
-        request.setParam("UID", uid);
-        request.setParam("include", "identities-all,loginIDs,profile,email,data");
-        final GSResponse response = request.send();
-        if (response.getErrorCode() == 0) {
-            return response.getData().toJsonString();
-        } else {
-            return response.getResponseText();
-        }
-    }
-
-    @Override
-    public String isAvailableLoginId(String loginId) {
-        final GSRequest request = getRequest(API_IS_AVAILABLE_LOGIN_ID);
-        request.setParam("loginID", loginId);
-        final GSResponse response = request.send();
-        if (response.getErrorCode() == 0) {
-            return response.getData().toJsonString();
-        } else {
-            return response.getResponseText();
-        }
-    }
-
-    @Override
-    public String getJWTPublicKey() {
+    String getJWTPublicKey() {
         final GSRequest request = getRequest(API_GET_JWT_PUBLIC_KEY);
         request.setParam("V2", true);
         final GSResponse response = request.send();

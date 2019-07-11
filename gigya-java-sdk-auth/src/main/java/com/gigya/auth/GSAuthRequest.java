@@ -28,18 +28,6 @@ public class GSAuthRequest extends GSRequest {
         super(apiKey, null, null, apiMethod, null, true, userKey);
         this.privateKey = privateKey;
     }
-
-    /**
-     * @param userKey      Account user key
-     * @param privateKey   Account private key
-     * @param apiMethod    Request api method
-     * @param clientParams Request parameters
-     */
-    public GSAuthRequest(String userKey, String privateKey, String apiMethod, GSObject clientParams) {
-        super(null, null, null, apiMethod, clientParams, true, userKey);
-        this.privateKey = privateKey;
-    }
-
     /**
      * @param userKey      Account user key
      * @param privateKey   Account private key

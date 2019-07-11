@@ -19,6 +19,7 @@ dependencies {
     testCompile 'org.powermock:powermock-module-junit4:1.7.4'
     testCompile 'org.powermock:powermock-api-mockito2:1.7.4'
 
+
     compile fileTree(dir: 'libs', include: ['*.jar'])
 
     compile 'io.jsonwebtoken:jjwt-api:0.10.5'
