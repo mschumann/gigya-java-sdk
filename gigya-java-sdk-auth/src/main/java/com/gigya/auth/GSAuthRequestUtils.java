@@ -20,7 +20,7 @@ public class GSAuthRequestUtils {
     /**
      * Generate an RSA private key instance from given Base64 encoded String.
      *
-     * @param encodedPrivateKey Base64 encoded private key String resource.
+     * @param encodedPrivateKey Base64 encoded private key String resource (RSA - PKCS#1).
      * @return Generated private key instance.
      */
     public static PrivateKey rsaPrivateKeyFromBase64String(String encodedPrivateKey) {

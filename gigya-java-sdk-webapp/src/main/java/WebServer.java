@@ -14,7 +14,7 @@ public class WebServer extends HttpServlet {
     /*
     GSRequest dispatcher.
      */
-    final private RequestDispatcher _dispatcher = new RequestDispatcher(true);
+    private RequestDispatcher _dispatcher;
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp)
@@ -41,8 +41,15 @@ public class WebServer extends HttpServlet {
 
         final ServletContext context = getServletContext();
 
+        // enableAuthentication parameter.
+        final String enableAuthentication = req.getParameter("enableAuthentication");
+        _dispatcher = new RequestDispatcher(Boolean.parseBoolean(enableAuthentication));
+        _dispatcher.setContext(context);
+
         PrintWriter out = resp.getWriter();
-        resp.setContentType("text/plain");
+        resp.setContentType("text/json");
+        resp.setHeader("Access-Control-Allow-Origin", "*");
+        resp.setHeader("Access-Control-Allow-Methods", "POST,GET,DELETE,PUT,OPTIONS");
 
         final String servletPath = req.getServletPath();
 
@@ -56,8 +63,8 @@ public class WebServer extends HttpServlet {
             case "/getJWTPublicKey":
 
                 // Fetch site public key.
-                jsonRes = _dispatcher.getPublicKey();
-                context.log("getPublicKey response json: " + jsonRes);
+                jsonRes = _dispatcher.getJWTPublicKey();
+                context.log("getJWTPublicKey response json: " + jsonRes);
 
                 break;
             /*
@@ -82,10 +89,20 @@ public class WebServer extends HttpServlet {
                 final String registrationPassword = req.getParameter("password");
                 final String exp = req.getParameter("exp");
 
-                context.log("register with parameters: email " + registrationEmail + " password: " + registrationPassword + " exp: " + exp);
+                // Currently all fields are required.
+                final String photoURL = req.getParameter("photoURL");
+                final String firstName = req.getParameter("firstName");
+                final String lastName = req.getParameter("lastName");
+
+                context.log("register with parameters:" +
+                        " email " + registrationEmail +
+                        " password: " + registrationPassword +
+                        " exp: " + exp +
+                        " photoURL: " + photoURL);
 
                 // Initiate registration request.
-                jsonRes = _dispatcher.register(registrationEmail, registrationPassword, Integer.parseInt(exp));
+                final String profileJson = "{\"firstName\":\"" + firstName + "\",\"lastName\":\"" + lastName + "\",\"photoURL\":\"" + photoURL + "\"}";
+                jsonRes = _dispatcher.register(registrationEmail, registrationPassword, Integer.parseInt(exp), profileJson);
                 context.log("register response json: " + jsonRes);
 
                 break;

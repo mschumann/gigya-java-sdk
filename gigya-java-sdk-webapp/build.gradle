@@ -1,6 +1,5 @@
-plugins {
-    id 'jetty'
-}
+apply plugin: 'war'
+apply from: 'https://raw.github.com/gretty-gradle-plugin/gretty/master/pluginScripts/gretty.plugin'
 
 archivesBaseName = 'api'
 version 'unspecified'

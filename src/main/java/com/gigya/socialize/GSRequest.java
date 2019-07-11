@@ -339,7 +339,7 @@ public class GSRequest {
         if (this.accessToken == null && this.secretKey == null && (this.userKey == null || this.apiKey == null)) {
             authConstraint = true;
         }
-        if (additionalHeaders.get("Authorization") != null) {
+        if (additionalHeaders != null && additionalHeaders.get("Authorization") != null) {
             authConstraint = false;
         }
         if (authConstraint) {

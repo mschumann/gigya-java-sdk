@@ -1,11 +1,15 @@
 public interface IRequestDispatcher {
 
-    String getPublicKey();
+    String register(String email, String password, int exp, String profile);
+
+    String login(String loginId, String password);
 
     String getAccountInfo(String uid);
 
-    String register(String email, String password, int exp);
+    String verifyLogin(String uid);
 
-    String login(String loginId, String password);
+    String isAvailableLoginId(String loginId);
+
+    String getJWTPublicKey();
 
 }

@@ -11,6 +11,8 @@
         <url-pattern>/login</url-pattern>
         <url-pattern>/register</url-pattern>
         <url-pattern>/getJWTPublicKey</url-pattern>
+        <url-pattern>/isAvailableLoginId</url-pattern>
+        <url-pattern>/verifyLogin</url-pattern>
     </servlet-mapping>
 
 </web-app>
