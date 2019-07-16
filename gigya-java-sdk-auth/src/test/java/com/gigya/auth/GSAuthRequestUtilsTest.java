@@ -95,4 +95,9 @@ public class GSAuthRequestUtilsTest {
         final Jws<Claims> claimsJws = Jwts.parser().parseClaimsJws(jws);
     }
 
+    @Test
+    public void test_validateGigyaSignature() {
+
+    }
+
 }

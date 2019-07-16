@@ -19,24 +19,24 @@ public class GSRequest {
     private static Random randomGenerator = new Random();
     private static final String DEFAULT_API_DOMAIN = "us1.gigya.com";
 
-    private String host;
-    private String path;
-    private String accessToken;
-    private String apiKey;
-    private String secretKey;
-    private GSObject params;
+    protected String host;
+    protected String path;
+    protected String accessToken;
+    protected String apiKey;
+    protected String secretKey;
+    protected GSObject params;
     private GSObject urlEncodedParams;
-    private Map<String, String> additionalHeaders;
-    private boolean useHTTPS;
-    private boolean isLoggedIn;
-    private boolean isRetry = false;
+    private Map<String, String> additionalHeaders = new HashMap<String, String>();
+    protected boolean useHTTPS;
+    protected boolean isLoggedIn;
+    protected boolean isRetry = false;
     protected String userKey;
     protected String apiMethod;
     protected String apiDomain = DEFAULT_API_DOMAIN;
     protected String hostOverride = null;
     protected String format;
 
-    private GSLogger logger = new GSLogger();
+    protected GSLogger logger = new GSLogger();
     private Proxy proxy = null;
 
 
@@ -335,14 +335,7 @@ public class GSRequest {
 
 
         // Evaluate request authorization conditions.
-        boolean authConstraint = false;
         if (this.accessToken == null && this.secretKey == null && (this.userKey == null || this.apiKey == null)) {
-            authConstraint = true;
-        }
-        if (additionalHeaders != null && additionalHeaders.get("Authorization") != null) {
-            authConstraint = false;
-        }
-        if (authConstraint) {
             return new GSResponse(this.apiMethod, this.params, 400002, logger);
         }
 
@@ -489,37 +482,39 @@ public class GSRequest {
 
             logger.write("sdk", params.getString("sdk"));
 
-            if (accessToken != null) {
-                params.put("oauth_token", accessToken);
-            } else {
-                if (!params.containsKey("oauth_token") && token != null) {
-                    params.put("apiKey", token);
-                }
+            if (additionalHeaders != null && !additionalHeaders.containsKey("Authorization")) {
+                if (accessToken != null) {
+                    params.put("oauth_token", accessToken);
+                } else {
+                    if (!params.containsKey("oauth_token") && token != null) {
+                        params.put("apiKey", token);
+                    }
 
-                if (this.userKey != null)
-                    params.put("userKey", this.userKey);
+                    if (this.userKey != null)
+                        params.put("userKey", this.userKey);
 
-                if (secret != null) {
-                    String timestamp = Long.toString((System
-                            .currentTimeMillis() / 1000)
-                            + timestampOffsetSec);
+                    if (secret != null) {
+                        String timestamp = Long.toString((System
+                                .currentTimeMillis() / 1000)
+                                + timestampOffsetSec);
 
-                    String nonce = System.currentTimeMillis()
-                            + "_"
-                            + randomGenerator.nextInt();
+                        String nonce = System.currentTimeMillis()
+                                + "_"
+                                + randomGenerator.nextInt();
 
-                    params.put("timestamp", timestamp);
-                    params.put("nonce", nonce);
+                        params.put("timestamp", timestamp);
+                        params.put("nonce", nonce);
 
-                    String baseString = SigUtils.calcOAuth1BaseString(
-                            httpMethod, resourceURI, this);
-                    logger.write("baseString", baseString);
+                        String baseString = SigUtils.calcOAuth1BaseString(
+                                httpMethod, resourceURI, this);
+                        logger.write("baseString", baseString);
 
-                    String signature = SigUtils.getOAuth1Signature(
-                            baseString, secret);
+                        String signature = SigUtils.getOAuth1Signature(
+                                baseString, secret);
 
-                    params.put("sig", signature);
-                    logger.write("sig", signature);
+                        params.put("sig", signature);
+                        logger.write("sig", signature);
+                    }
                 }
             }
 
@@ -659,9 +654,6 @@ public class GSRequest {
     }
 
     public void addHeader(String key, String value) {
-        if (additionalHeaders == null) {
-            additionalHeaders = new HashMap<String, String>();
-        }
         additionalHeaders.put(key, value);
     }
 

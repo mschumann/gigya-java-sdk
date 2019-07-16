@@ -24,6 +24,17 @@ public class GSAuthRequestUtils {
 
     public static GSLogger logger = new GSLogger();
 
+    private static String trimKey(String raw) {
+        return raw
+                .replace("-----BEGIN RSA PRIVATE KEY-----", "")
+                .replace("-----END RSA PRIVATE KEY-----", "")
+                .replace("-----BEGIN PUBLIC KEY-----", "")
+                .replace("-----END PUBLIC KEY-----", "")
+                .replace("\\r", "")
+                .replace("\n", "")
+                .replace("\\n", "");
+    }
+
     /**
      * Generate an RSA private key instance from given Base64 encoded String.
      *
@@ -33,7 +44,8 @@ public class GSAuthRequestUtils {
     static PrivateKey rsaPrivateKeyFromBase64String(String encodedPrivateKey) {
         try {
 
-            DerInputStream derReader = new DerInputStream(Base64.getDecoder().decode(encodedPrivateKey.getBytes()));
+            DerInputStream derReader = new DerInputStream(Base64.getDecoder().decode(
+                    trimKey(encodedPrivateKey).getBytes()));
             DerValue[] seq = derReader.getSequence(0);
             // skip version seq[0];
             BigInteger modulus = seq[1].getBigInteger();
@@ -65,7 +77,8 @@ public class GSAuthRequestUtils {
      */
     static PublicKey rsaPublicKeyFromBase64String(String encodedPublicKey) {
         try {
-            X509EncodedKeySpec spec = new X509EncodedKeySpec(Base64.getDecoder().decode(encodedPublicKey.getBytes()));
+            X509EncodedKeySpec spec = new X509EncodedKeySpec(Base64.getDecoder().decode(
+                    trimKey(encodedPublicKey).getBytes()));
             KeyFactory kf = KeyFactory.getInstance("RSA");
             return kf.generatePublic(spec);
         } catch (Exception ex) {
@@ -119,32 +132,31 @@ public class GSAuthRequestUtils {
         // #2 - Add JWT headers.
         final Map<String, Object> header = new HashMap<>();
         header.put("alg", "RS256");
-        header.put("typ", "jwt");
+        header.put("typ", "JWT");
         header.put("kid", userKey);
 
-        // #3 - Add JWT payload.
-        final Map<String, Object> claims = new HashMap<>();
-        claims.put("iat", Calendar.getInstance(TimeZone.getTimeZone("UTC")).getTimeInMillis()); // UTC.
-        claims.put("jti", UUID.randomUUID().toString());
-
-        // #4 - Compose & sign Jwt.
+        // #3 - Compose & sign Jwt.
         return Jwts.builder()
-                .setHeader(header)
+                .setHeaderParams(header)
+                .setId(UUID.randomUUID().toString())
+                .setIssuedAt(Calendar.getInstance(TimeZone.getTimeZone("UTC")).getTime())
                 .signWith(key, SignatureAlgorithm.RS256)
-                .addClaims(claims)
                 .compact();
     }
 
     /**
+     * Verify JWT given apiKey & secret.
+     * ApiKey & secret are required to perform a GSRequest to fetch the DC public key.
+     * <p>
      * Verify Gigya Id Token.
      *
-     * @param jwt       Id token
-     * @param apiKey    Client ApiKey
-     * @param apiSecret Client ApiSecret
+     * @param jwt    Id token
+     * @param apiKey Client ApiKey
+     * @param privateKey Account Base64 encoded private key.
      */
-    public static boolean validateGigyaSignature(String jwt, String apiKey, String apiSecret) {
-        // Fetch the public key.
-        final GSRequest request = new GSRequest(apiKey, apiSecret, "accounts.getJWTPublicKey");
+    public static boolean validateGigyaSignature(String jwt, String privateKey, String userKey, String apiKey) {
+        // Fetch the public key using endpoint "accounts.getJWTPublicKey".
+        final GSAuthRequest request = new GSAuthRequest(userKey, privateKey, apiKey, "accounts.getJWTPublicKey");
         final GSResponse response = request.send();
         if (response.getErrorCode() == 0) {
             final String jwk = response.getData().toJsonString();
@@ -163,6 +175,8 @@ public class GSAuthRequestUtils {
     }
 
     /**
+     * Verify JWT given public key instance & api key constraints.
+     *
      * @param jwt    JWT token to verify.
      * @param apiKey Account ApiKey.
      * @return UID from given token if verified. Null otherwise.
@@ -186,7 +200,7 @@ public class GSAuthRequestUtils {
             // #3 - Verify current time is between iat & exp.
             final long iat = claimsJws.getBody().get("iat", Long.class);
             final long exp = claimsJws.getBody().get("exp", Long.class);
-            final long currentTimeInUTC = Calendar.getInstance(TimeZone.getTimeZone("UTC")).getTimeInMillis(); // UTC.
+            final long currentTimeInUTC = Calendar.getInstance(TimeZone.getTimeZone("UTC")).getTimeInMillis() / 1000;  // UTC (seconds).
             if (!(currentTimeInUTC >= iat && currentTimeInUTC <= exp)) {
                 logger.write("JWT verification failed - expired");
                 return false;
