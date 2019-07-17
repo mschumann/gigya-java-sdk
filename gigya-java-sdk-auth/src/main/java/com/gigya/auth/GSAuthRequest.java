@@ -5,6 +5,7 @@ import com.gigya.socialize.GSRequest;
 import com.gigya.socialize.GSResponse;
 
 import java.io.UnsupportedEncodingException;
+import java.net.MalformedURLException;
 import java.net.SocketTimeoutException;
 import java.security.InvalidKeyException;
 
@@ -25,13 +26,23 @@ public class GSAuthRequest extends GSRequest {
     }
 
     @Override
-    public GSResponse send(int timeoutMS) {
+    protected void sign(String token, String secret, String httpMethod, String resourceURI)
+            throws UnsupportedEncodingException, InvalidKeyException, MalformedURLException {
         // Compose jwt && add to request header.
         final String jwt = GSAuthRequestUtils.composeJwt(userKey, privateKey);
         if (jwt == null) {
-            return new GSResponse(this.apiMethod, this.params, 400002, logger);
+            logger.write("Failed to generate authorization JWT");
         }
         addHeader("Authorization", "Bearer " + jwt);
+    }
+
+    @Override
+    public GSResponse send() {
+        return send(-1);
+    }
+
+    @Override
+    public GSResponse send(int timeoutMS) {
 
         if (apiKey != null) {
             setParam("apiKey",this.apiKey);
@@ -62,9 +73,6 @@ public class GSAuthRequest extends GSRequest {
         logger.write("apiMethod", apiMethod);
         logger.write("params", params);
         logger.write("useHTTPS", useHTTPS);
-
-        // Clear the user key otherwise the JWT evaluation wont be verified.
-        this.userKey = null;
 
         try {
             GSResponse res = sendRequest("POST", this.host, this.path,

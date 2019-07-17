@@ -441,6 +441,44 @@ public class GSRequest {
         return req.toString();
     }
 
+    protected void sign(String token, String secret, String httpMethod, String resourceURI)
+            throws UnsupportedEncodingException, InvalidKeyException, MalformedURLException {
+        if (accessToken != null) {
+            params.put("oauth_token", accessToken);
+        } else {
+            if (!params.containsKey("oauth_token") && token != null) {
+                params.put("apiKey", token);
+            }
+
+            if (this.userKey != null)
+                params.put("userKey", this.userKey);
+
+            if (secret != null) {
+                String timestamp = Long.toString((System
+                        .currentTimeMillis() / 1000)
+                        + timestampOffsetSec);
+
+                String nonce = System.currentTimeMillis()
+                        + "_"
+                        + randomGenerator.nextInt();
+
+                params.put("timestamp", timestamp);
+                params.put("nonce", nonce);
+
+                String baseString = SigUtils.calcOAuth1BaseString(
+                        httpMethod, resourceURI, this);
+                logger.write("baseString", baseString);
+
+                String signature = SigUtils.getOAuth1Signature(
+                        baseString, secret);
+
+                params.put("sig", signature);
+                logger.write("sig", signature);
+            }
+        }
+    }
+
+
     /**
      * Send the actual HTTP/S request
      *
@@ -482,41 +520,7 @@ public class GSRequest {
 
             logger.write("sdk", params.getString("sdk"));
 
-            if (additionalHeaders != null && !additionalHeaders.containsKey("Authorization")) {
-                if (accessToken != null) {
-                    params.put("oauth_token", accessToken);
-                } else {
-                    if (!params.containsKey("oauth_token") && token != null) {
-                        params.put("apiKey", token);
-                    }
-
-                    if (this.userKey != null)
-                        params.put("userKey", this.userKey);
-
-                    if (secret != null) {
-                        String timestamp = Long.toString((System
-                                .currentTimeMillis() / 1000)
-                                + timestampOffsetSec);
-
-                        String nonce = System.currentTimeMillis()
-                                + "_"
-                                + randomGenerator.nextInt();
-
-                        params.put("timestamp", timestamp);
-                        params.put("nonce", nonce);
-
-                        String baseString = SigUtils.calcOAuth1BaseString(
-                                httpMethod, resourceURI, this);
-                        logger.write("baseString", baseString);
-
-                        String signature = SigUtils.getOAuth1Signature(
-                                baseString, secret);
-
-                        params.put("sig", signature);
-                        logger.write("sig", signature);
-                    }
-                }
-            }
+            sign(token, secret, httpMethod, resourceURI);
 
             String data = this.buildQS();
             logger.write("post_data", data);
