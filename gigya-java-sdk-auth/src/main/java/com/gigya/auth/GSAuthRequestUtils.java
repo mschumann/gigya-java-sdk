@@ -154,9 +154,11 @@ public class GSAuthRequestUtils {
      * @param apiKey Client ApiKey
      * @param privateKey Account Base64 encoded private key.
      */
-    public static boolean validateGigyaSignature(String jwt, String privateKey, String userKey, String apiKey) {
+    public static boolean validateGigyaSignature(String jwt, String privateKey, String userKey, String apiKey, String apiDomain) {
         // Fetch the public key using endpoint "accounts.getJWTPublicKey".
         final GSAuthRequest request = new GSAuthRequest(userKey, privateKey, apiKey, "accounts.getJWTPublicKey");
+        // Public key is relevant per data center.
+        request.setAPIDomain(apiDomain);
         final GSResponse response = request.send();
         if (response.getErrorCode() == 0) {
             final String jwk = response.getData().toJsonString();
