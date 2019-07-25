@@ -30,6 +30,16 @@ public class GSAuthRequestUtils {
     private static Map<String, String> publicKeysCache = new HashMap<>();
 
     /**
+     * Explicitly add a public jwk to cache.
+     *
+     * @param dataCenterKey Data center as the key.
+     * @param jwk           JWK value.
+     */
+    public static void addToPublicKeyCache(String dataCenterKey, String jwk) {
+        publicKeysCache.put(dataCenterKey, jwk);
+    }
+
+    /**
      * Clear public key cache.
      */
     public static void clearPublicKeysCache() {
@@ -208,7 +218,7 @@ public class GSAuthRequestUtils {
      * @param apiDomain Api domain.
      * @return UID field if validation is successful.
      */
-    public String validateSignature(String jwt, String apiKey, String apiDomain) {
+    public static String validateSignature(String jwt, String apiKey, String apiDomain) {
 
         final String kid = getKidFromJWSHeader(jwt);
         if (kid == null) {
@@ -318,7 +328,6 @@ public class GSAuthRequestUtils {
      */
     static String verifyJwt(String jwt, String apiKey, PublicKey key) {
         try {
-
             // #1 - Parse token. Signing key must be available.
             final Jws<Claims> claimsJws = Jwts.parser()
                     .setSigningKey(key)
@@ -335,13 +344,14 @@ public class GSAuthRequestUtils {
             // #3 - Verify current time is between iat & exp. Add 120 seconds grace period.
             final long iat = claimsJws.getBody().get("iat", Long.class);
             final long exp = claimsJws.getBody().get("exp", Long.class);
-            final long grace = 120; // Seconds.
+            final long skew = 120; // Seconds.
             final long currentTimeInUTC = Calendar.getInstance(TimeZone.getTimeZone("UTC")).getTimeInMillis() / 1000;  // UTC (seconds).
-            if (!(currentTimeInUTC >= iat && (currentTimeInUTC <= exp + grace))) {
+            if (!(currentTimeInUTC >= iat && (currentTimeInUTC <= exp + skew))) {
                 logger.write("JWT verification failed - expired");
                 return null;
             }
 
+            // #4 - Fetch the UID field - subject field of the jwt.
             final String UID = claimsJws.getBody().getSubject();
             if (UID != null) {
                 return UID;

@@ -15,17 +15,18 @@ public class GSAuthRequest extends GSRequest {
     public GSAuthRequest(String userKey, String privateKey, String apiKey, String apiMethod) {
         super(apiKey, null, null, apiMethod, null, true, userKey);
         this.privateKey = privateKey;
-
     }
 
     @Override
     protected void signRequest(String token, String secret, String httpMethod, String resourceURI) {
         // Compose jwt && add to request header.
-        final String jwt = GSAuthRequestUtils.composeJwt(userKey, privateKey);
+        final String jwt = GSAuthRequestUtils.composeJwt(this.userKey, this.privateKey);
         if (jwt == null) {
             logger.write("Failed to generate authorization JWT");
         }
         addHeader("Authorization", "Bearer " + jwt);
+        // Api key is required.
+        params.put("apiKey", token);
     }
 
     @Override
