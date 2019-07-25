@@ -1,17 +1,18 @@
 package com.gigya.auth;
 
-import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.Jws;
-import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.*;
+import org.json.JSONException;
+import org.json.JSONObject;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.powermock.modules.junit4.PowerMockRunner;
 
+import java.security.Key;
 import java.security.PrivateKey;
 import java.security.PublicKey;
+import java.util.Base64;
 
-import static junit.framework.TestCase.assertEquals;
-import static junit.framework.TestCase.assertNotNull;
+import static junit.framework.TestCase.*;
 
 @RunWith(PowerMockRunner.class)
 public class GSAuthRequestUtilsTest {
@@ -96,8 +97,46 @@ public class GSAuthRequestUtilsTest {
     }
 
     @Test
-    public void test_validateGigyaSignature() {
+    public void test_generateTokenAndParseHeadersWithoutKey() throws JSONException {
+        final String jws = GSAuthRequestUtils.composeJwt("ANiHp6OEaqFZ", getPrivateKey());
 
+        assertNotNull(jws);
+
+        String[] split = jws.split("\\.");
+        assertTrue(split.length > 0);
+
+        final String encodedHeaders = split[0];
+        final String decodedHeaders = new String(Base64.getDecoder().decode(encodedHeaders.getBytes()));
+        assertNotNull(decodedHeaders);
+        System.out.println(decodedHeaders);
+
+        final JSONObject jsonObject = new JSONObject(decodedHeaders);
+        final String kid = jsonObject.getString("kid");
+
+        assertNotNull(kid);
+        System.out.println(kid);
+    }
+
+    @Test
+    public void test_fetchPublicJWK() {
+
+        final String jwk = GSAuthRequestUtils.fetchPublicJWK(
+                "REQ0MUQ5N0NCRTJEMzk3M0U1RkNDQ0U0Q0M1REFBRjhDMjdENUFBQg",
+                "3_okzFVIQTsXw5vS6s0y9BEm6T4fbNTPVox6DZAwn-rCC7ca1dv6LhrPCdksCiSfOc",
+                "us1-st2.gigya.com");
+
+        assertNotNull(jwk);
+    }
+
+    @Test
+    public void test_fetchPublicJWK_withWrongKid() {
+
+        final String jwk = GSAuthRequestUtils.fetchPublicJWK(
+                "REQ0MUQ5N0NCRTJEMzk3M0U1RkNDQ0U0Q0M1REFBRjhDMjdENUFBQgss",
+                "3_okzFVIQTsXw5vS6s0y9BEm6T4fbNTPVox6DZAwn-rCC7ca1dv6LhrPCdksCiSfOc",
+                "us1-st2.gigya.com");
+
+        assertNull(jwk);
     }
 
 }

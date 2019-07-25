@@ -9,8 +9,6 @@
           <set>
             <option value="$PROJECT_DIR$" />
             <option value="$PROJECT_DIR$/gigya-java-sdk-auth" />
-            <option value="$PROJECT_DIR$/gigya-java-sdk-testapp" />
-            <option value="$PROJECT_DIR$/gigya-java-sdk-webapp" />
           </set>
         </option>
         <option name="useAutoImport" value="true" />

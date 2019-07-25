@@ -335,7 +335,7 @@ public class GSRequest {
 
 
         // Evaluate request authorization conditions.
-        if (this.accessToken == null && this.secretKey == null && (this.userKey == null || this.apiKey == null)) {
+        if (!evaluateRequestAuthorization()) {
             return new GSResponse(this.apiMethod, this.params, 400002, logger);
         }
 
@@ -370,6 +370,15 @@ public class GSRequest {
             return new GSResponse(this.apiMethod, this.params, 500000,
                     ex.toString(), logger);
         }
+    }
+
+    /**
+     * Override for a different authorization clause.
+     *
+     * @return True if authorized to make the request.
+     */
+    protected boolean evaluateRequestAuthorization() {
+        return this.accessToken != null || this.secretKey != null || (this.userKey != null && this.apiKey != null);
     }
 
     /**
@@ -441,10 +450,10 @@ public class GSRequest {
         return req.toString();
     }
 
-    protected void sign(String token, String secret, String httpMethod, String resourceURI)
+    protected void signRequest(String token, String secret, String httpMethod, String resourceURI)
             throws UnsupportedEncodingException, InvalidKeyException, MalformedURLException {
-        if (accessToken != null) {
-            params.put("oauth_token", accessToken);
+        if (this.accessToken != null) {
+            params.put("oauth_token", this.accessToken);
         } else {
             if (!params.containsKey("oauth_token") && token != null) {
                 params.put("apiKey", token);
@@ -477,7 +486,6 @@ public class GSRequest {
             }
         }
     }
-
 
     /**
      * Send the actual HTTP/S request
@@ -520,7 +528,8 @@ public class GSRequest {
 
             logger.write("sdk", params.getString("sdk"));
 
-            sign(token, secret, httpMethod, resourceURI);
+            // Sign the request.
+            signRequest(token, secret, httpMethod, resourceURI);
 
             String data = this.buildQS();
             logger.write("post_data", data);

@@ -1,12 +1,8 @@
 package com.gigya.auth;
 
-import com.gigya.socialize.GSLogger;
-import com.gigya.socialize.GSRequest;
-import com.gigya.socialize.GSResponse;
-import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.Jws;
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
+import com.gigya.socialize.*;
+import io.jsonwebtoken.*;
+import org.json.JSONException;
 import org.json.JSONObject;
 import sun.security.util.DerInputStream;
 import sun.security.util.DerValue;
@@ -15,19 +11,52 @@ import java.math.BigInteger;
 import java.security.KeyFactory;
 import java.security.PrivateKey;
 import java.security.PublicKey;
+import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.RSAPrivateCrtKeySpec;
 import java.security.spec.RSAPublicKeySpec;
 import java.security.spec.X509EncodedKeySpec;
 import java.util.*;
+import java.util.Base64;
 
 public class GSAuthRequestUtils {
 
     public static GSLogger logger = new GSLogger();
 
+    /**
+     * Caching the public keys.
+     * Key - data center (lower cased).
+     * Value - public key jwk.
+     */
+    private static Map<String, String> publicKeysCache = new HashMap<>();
+
+    /**
+     * Clear public key cache.
+     */
+    public static void clearPublicKeysCache() {
+        publicKeysCache.clear();
+    }
+
+    /**
+     * Clear cached public key from public keys cache.
+     *
+     * @param dataCenter Data center key.
+     */
+    public static void clearPublicKeysCache(String dataCenter) {
+        publicKeysCache.remove(dataCenter);
+    }
+
+    /**
+     * Trim .pem style keys from delimiters and wrappers.
+     *
+     * @param raw Raw .pem style string.
+     * @return Stripped base64 encoded key.
+     */
     private static String trimKey(String raw) {
         return raw
-                .replace("-----BEGIN RSA PRIVATE KEY-----", "")
-                .replace("-----END RSA PRIVATE KEY-----", "")
+                .replace("-----BEGIN RSA PRIVATE KEY-----", "") //PKCS#1
+                .replace("-----END RSA PRIVATE KEY-----", "") //PKCS#1
+                .replace("-----BEGIN PRIVATE KEY-----", "") //PKCS#8
+                .replace("-----END PRIVATE KEY-----", "") //PKCS#8
                 .replace("-----BEGIN PUBLIC KEY-----", "")
                 .replace("-----END PUBLIC KEY-----", "")
                 .replace("\\r", "")
@@ -37,6 +66,7 @@ public class GSAuthRequestUtils {
 
     /**
      * Generate an RSA private key instance from given Base64 encoded String.
+     * !! This method is used only for parsing a PCKS#1 private key. Support for this method is only until Java version 10.
      *
      * @param encodedPrivateKey Base64 encoded private key String resource (RSA - PKCS#1).
      * @return Generated private key instance.
@@ -63,6 +93,28 @@ public class GSAuthRequestUtils {
             KeyFactory keyFactory = KeyFactory.getInstance("RSA");
             return keyFactory.generatePrivate(keySpec);
         } catch (Exception ex) {
+            logger.write("Failed to generate RSA private key from encoded string");
+            logger.write(ex);
+            ex.printStackTrace();
+        }
+        return null;
+    }
+
+    // TODO: 2019-07-25 Rename and use this method when PrivateKey is PKCS#8 only!
+
+    /**
+     * Generate an RSA private key instance from given Base64 encoded String.
+     *
+     * @param encodedPrivateKey Base64 encoded private key String resource (RSA - PKCS#8).
+     * @return Generated private key instance.
+     */
+    static PrivateKey rsaPrivateKeyFromBase64String8(String encodedPrivateKey) {
+        try {
+            KeyFactory kf = KeyFactory.getInstance("RSA");
+            PKCS8EncodedKeySpec keySpecPKCS8 = new PKCS8EncodedKeySpec(Base64.getDecoder().decode(encodedPrivateKey));
+            return kf.generatePrivate(keySpecPKCS8);
+        } catch (Exception ex) {
+            logger.write("Failed to generate RSA private key from encoded string");
             logger.write(ex);
             ex.printStackTrace();
         }
@@ -82,6 +134,7 @@ public class GSAuthRequestUtils {
             KeyFactory kf = KeyFactory.getInstance("RSA");
             return kf.generatePublic(spec);
         } catch (Exception ex) {
+            logger.write("Failed to generate RSA public key from encoded string");
             logger.write(ex);
             ex.printStackTrace();
         }
@@ -150,30 +203,110 @@ public class GSAuthRequestUtils {
      * <p>
      * Verify Gigya Id Token.
      *
-     * @param jwt    Id token
-     * @param apiKey Client ApiKey
-     * @param privateKey Account Base64 encoded private key.
+     * @param jwt       Id token.
+     * @param apiKey    Client ApiKey.
+     * @param apiDomain Api domain.
+     * @return UID field if validation is successful.
      */
-    public static boolean validateGigyaSignature(String jwt, String privateKey, String userKey, String apiKey, String apiDomain) {
+    public String validateSignature(String jwt, String apiKey, String apiDomain) {
+
+        final String kid = getKidFromJWSHeader(jwt);
+        if (kid == null) {
+            logger.write("Failed to parse kid header");
+            return null;
+        }
+
+        String publicJWK = null;
+
+        // Try to fetch from cache.
+        if (publicKeysCache.containsKey(apiDomain.toLowerCase())) {
+            publicJWK = publicKeysCache.get(apiDomain.toLowerCase());
+        }
+
+        if (publicJWK == null) {
+            // None in cache - fetch from network.
+            publicJWK = fetchPublicJWK(kid, apiKey, apiDomain);
+        }
+
+        if (publicJWK == null) {
+            // JWT not available.
+            logger.write("Failed to fetch jwk public key");
+            return null;
+        }
+
+        final PublicKey publicKey = GSAuthRequestUtils.rsaPublicKeyFromJWKString(publicJWK);
+        if (publicKey == null) {
+            logger.write("Failed to instantiate PublicKey instance from jwk");
+            return null;
+        }
+
+        // Update public key cache only when it was successfully generated. Useless otherwise.
+        publicKeysCache.put(apiDomain.toLowerCase(), publicJWK);
+
+        return verifyJwt(jwt, apiKey, publicKey);
+    }
+
+    /**
+     * Try to fetch the "kid" field from a jwt header.
+     *
+     * @param jws Json web token.
+     * @return Kid field from token header.
+     */
+    static String getKidFromJWSHeader(String jws) {
+        String[] split = jws.split("\\.");
+        if (split.length > 0) {
+            final String encodedHeaders = split[0];
+            final String decodedHeaders = new String(Base64.getDecoder().decode(encodedHeaders.getBytes()));
+
+            // Parse json headers. Fetch kid fields.
+            try {
+                final JSONObject jsonObject = new JSONObject(decodedHeaders);
+                return jsonObject.getString("kid");
+            } catch (JSONException e) {
+                logger.write("Failed to parse jwk headers");
+                e.printStackTrace();
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Fetch available public key JWK representation validated by the "kid".
+     *
+     * @param kid       validation field.
+     * @param apiKey    Site ApiKey.
+     * @param apiDomain Data center.
+     * @return Validated JWK.
+     */
+    static String fetchPublicJWK(String kid, String apiKey, String apiDomain) {
+
         // Fetch the public key using endpoint "accounts.getJWTPublicKey".
-        final GSAuthRequest request = new GSAuthRequest(userKey, privateKey, apiKey, "accounts.getJWTPublicKey");
-        // Public key is relevant per data center.
-        request.setAPIDomain(apiDomain);
+        final GSAnonymousRequest request = new GSAnonymousRequest(apiKey, apiDomain, "accounts.getJWTPublicKey");
+        request.setParam("V2", true);
+
         final GSResponse response = request.send();
         if (response.getErrorCode() == 0) {
-            final String jwk = response.getData().toJsonString();
-            if (jwk == null) {
+
+            final GSArray keys = response.getArray("keys", null);
+            if (keys == null) {
                 logger.write("Failed to obtain JWK from response data");
-                return false;
+                return null;
             }
-            final PublicKey publicKey = GSAuthRequestUtils.rsaPublicKeyFromJWKString(jwk);
-            if (publicKey == null) {
-                logger.write("Failed to instantiate private key from JWK");
-                return false;
+            if (keys.length() == 0) {
+                logger.write("Failed to obtain JWK from response data - data is empty");
+                return null;
             }
-            return verifyJwt(jwt, apiKey, publicKey);
+
+            for (Object key : keys) {
+                if (key instanceof GSObject) {
+                    final String jwkKid = ((GSObject) key).getString("kid", null);
+                    if (jwkKid != null && jwkKid.equals(kid)) {
+                        return ((GSObject) key).toJsonString();
+                    }
+                }
+            }
         }
-        return false;
+        return null;
     }
 
     /**
@@ -181,37 +314,43 @@ public class GSAuthRequestUtils {
      *
      * @param jwt    JWT token to verify.
      * @param apiKey Account ApiKey.
-     * @return UID from given token if verified. Null otherwise.
+     * @return UID field (jwt subject) if verified.
      */
-    public static boolean verifyJwt(String jwt, String apiKey, PublicKey key) {
+    static String verifyJwt(String jwt, String apiKey, PublicKey key) {
         try {
 
-            // #1 - Parse token.
+            // #1 - Parse token. Signing key must be available.
             final Jws<Claims> claimsJws = Jwts.parser()
                     .setSigningKey(key)
                     .parseClaimsJws(jwt);
 
-            // Verification stage.
             // #2 - Verify JWT provided api key with input api key.
-            final String jwtApiKey = claimsJws.getBody().get("apiKey", String.class);
-            if (jwtApiKey != null && !jwtApiKey.equals(apiKey)) {
+            final String issuer = claimsJws.getBody().getIssuer();
+            final String validIssuer = "https://fidm.gigya.com/jwt/" + apiKey;
+            if (issuer != null && !issuer.equals(validIssuer)) {
                 logger.write("JWT verification failed - apiKey does not match");
-                return false;
+                return null;
             }
 
-            // #3 - Verify current time is between iat & exp.
+            // #3 - Verify current time is between iat & exp. Add 120 seconds grace period.
             final long iat = claimsJws.getBody().get("iat", Long.class);
             final long exp = claimsJws.getBody().get("exp", Long.class);
+            final long grace = 120; // Seconds.
             final long currentTimeInUTC = Calendar.getInstance(TimeZone.getTimeZone("UTC")).getTimeInMillis() / 1000;  // UTC (seconds).
-            if (!(currentTimeInUTC >= iat && currentTimeInUTC <= exp)) {
+            if (!(currentTimeInUTC >= iat && (currentTimeInUTC <= exp + grace))) {
                 logger.write("JWT verification failed - expired");
-                return false;
+                return null;
             }
 
-            return true;
+            final String UID = claimsJws.getBody().getSubject();
+            if (UID != null) {
+                return UID;
+            }
         } catch (Exception e) {
+            logger.write("Failed to verify jwt with exception");
+            logger.write(e);
             e.printStackTrace();
         }
-        return false;
+        return null;
     }
 }
