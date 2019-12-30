@@ -1,13 +1,14 @@
 package com.gigya.auth;
 
-import io.jsonwebtoken.*;
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jws;
+import io.jsonwebtoken.Jwts;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.powermock.modules.junit4.PowerMockRunner;
 
-import java.security.Key;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.util.Base64;
@@ -18,12 +19,12 @@ import static junit.framework.TestCase.*;
 public class GSAuthRequestUtilsTest {
 
     private String getPrivateKey() {
-        String rawKey = "\\r\\nMIIEoQIBAAKCAQEAy7d/1DUA+2hxI42XxsAsa6zcgOCFJCWfe0wMitRPnBatkx9Z\\r\\nUOGaZQ+UzQxSrMvjiC6C6jLNwYrsyQ6T+KtjlM44IGIdjflh+GM67czaFVWpkihv\\r\\nnWGsC9yV591vpV5qzOTop9QzjRZ52g2xZ4Uws/eNvGMJAx7cvHVQAGBPFXMufmqM\\r\\nNqYvP42hvuik+z+fcRO9l/7u+4YD5D8kROhiLGjdLgoveSojKUfFQDArvKgwlaPm\\r\\nm5uKw6wEzxB/dw1cOJ4mZ50n1USp2zO/OAPoXPZtFyCcHhZnX2aKip5sJ2WiBURS\\r\\nRXV9SeNhXpmbfR28BqB3kaLMG9011hhQJunAdQIDAQABAoH/Wx03jzIlvkx4Te6G\\r\\nc95//6jQ9tN0uTYanorlETLkaGu8NpFO4V4GMC1H4G4ijCalHcOvyg/u9yGrxkE+\\r\\n7Xm6kFOrxtAbZ+SibPX05Wc6I1CtBzIOudV1ndiLM6lWxh/0pK+9X1MJu5DR7zUw\\r\\no5xurA+M1TV2Um77S08s+P4aYPzWdUaVCKVAqd0JTmAVaL9rvpio85ukZRsAqPnq\\r\\nj61mfyW1WWwcuyz4mVZSCk6i7/AcLaXlobzhKzCclmzw8BBPalBkPm8Ftnze5bAF\\r\\ntkC4dTBGJ5vipfBvngGEfcUz1K4xg/VMFnV3+a9dDqRdOpm6ImUGaFKxxlbjk7y1\\r\\npf4hAoGBANP2Rd8/6dKaZgKQdrdvXVd5ms6f1BmDseu4dP8oeZzg3kuvsg3LaTuN\\r\\niSgOogGR7dy64wcQla7b2anfN5SEd+QZdM5C8RXPLy5cUPTXWJ4CEoq/XXhA50+K\\r\\nYEnZ2H7DDRs4sDDj/4Kk2l6n+UdbripNWZpH8jNtQVsX63n+PTBRAoGBAPYKrzSn\\r\\n+TTT2OvwCjWS9+a58v+hfVlfzH+K29xdD9WssTyKWVXgiI6uD0iBwk+hDy60Kufc\\r\\nVBY+3OhKUHgb73cM/0u3ghzgDXhmKWX9ra1grtMK43g/86fqZPkmoJpw55BsGZRs\\r\\nET3dtGkE3f04/aQz+V9oNoRXVi2niPtOOwjlAoGAbTuneovHhl9HXt7wL0xXADON\\r\\nEhrQBW4XDPF8adqEAdLo/HxI+E7xpl0kZ95Soxh/SpeNVCC54ukt3RtJ22IBHy33\\r\\nQizBbYneOLgeiG9KHfPXdmV0V/qquhUH1kdMCNegM30dX7TAAqXOW6WZE6stsGM4\\r\\nYAffy5zsZ3OGSNI62mECgYEAhR04t3Ndh7BJ/zRKQbv29VSLXLSBPdZvrF1zICEV\\r\\nTRR2e3uaY7TsDM2tJRxXBX/s1+bQA8uXjsWJ/P8f1CvA/hcBFHT/JyItB4O2SCDc\\r\\nUx4o17NfaBKpf6J36Lh2UbheACwMFtn05hTJ47unYrXvvGQGOhEG1cjurhqjKNul\\r\\nYuUCgYAhkvsyR0PaXNtIAlhdFX2V54wvFOuWCvez7Mk5unsXCYFq5Uoar7CMBBl9\\r\\n2H0z6+6HLhPn8k4H3SqNecAQlzzc3gr05F/AFkEivgLY7DsaYmj8aw/V1qi/Pbh4\\r\\npXBvExL/B937okJfR8aOzNWwUEA/tLvUejrdbUSHu0bNsB4/cQ==";
+        String rawKey = "-----BEGIN PRIVATE KEY-----\\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCW+no9nd6J++uc\\nhX/ak2x1uFg7QXk4FWF676rNoxJlyMSRSj25JIhJe2BcFaS78NRxnUywS51AU/3f\\nxNVEwphT1MEE2CDs0pclSmhPUxnN+ep17AYseIyg0FHZC5N2WJMBcnuYm/NjKlYr\\nlUtndH7uGOxuAM0X2Jy4GpHGQZwrw6SFzMYHYnQhmIZ311iBB00nquPHRXDhQpBb\\n3O9qvOWSFbOg1nY+Xgp9J0OyEN64j9tt+7i+sMSuOfFHrlxigawA9bXo+p7HZVON\\nf4Ne48pOd5bIqmaRwIFw5L3HEfE4JXnmslEGEZKNPZ5U2hKCEU/8fvipv8518TaS\\ntTCmmPbFAgMBAAECggEACLIDYVIa04qhTsH3k6CjAgKsfjkuoJbGpvxvs2k9cYRH\\nIfELLgMXIFhNO/B5LOPZcHO1S4AHXgGYYQ9mkw+8EzPxK/TArLMSRnELIepw1Yab\\nxM/jqSMGQmrNE/mRNCM00EQGL0toEKGLFfaCwcIZX2ArGcjNBx8QI6BQHgGAW5rR\\n0KhlKGG2LMVYNXLFWS9D7cqSD5tpUvbPNZbVj6LR7gtrxVcQO6f4ikM6mB3u3tjB\\npDlmm0XzkuTcJ+zgd+a8aSqgJFQfIp7vpMY6Ntc52MUDnVz+pX25pYXP/0JmdFJJ\\nvXy87t8ua1yKLtYnZWzZNXeoKhvYXKRPsz4L+FBnMQKBgQC9CpJtC3ZYzW3Jx56b\\nXvQGx++zFItJAkZbifxnkpuu4Cf5BSMijBQRTo/IX5fpkxZySjoxiBV0XQ81f1Kp\\nx0hn3f7MJOIgt2mCwN+/IKfMMz35y5QchAQtriAcLv73bk/NVdQstxR8QSK1nzyu\\njwemv1MJImMNaXfT9H09WpXwHQKBgQDMdIh1fC98UVEpFZ6FlrCvh9Ch6uMO2kMs\\nAng94nsb+1LmeOsSrDR1wg5Izdd4d7xRxpjyf5S2GMawvfHvHrg+nZZHD3azqRcq\\nG9Eb5oI2D6L8J0QRy4PAxTZnZYTE56kcHfE0pYYSKDqubGkMfEvHq5jz/LJIFhfm\\nSzg9viIwyQKBgD2gla2w3+sBRXpTdlRmdx1CztTNrL6nXDJ5YGyPcetnrgBTeWnI\\nyr39o4gKCeceiWHG6wO8vmnJ8KxbDqLEkckyqN76YzGROXdj001mou1CA0FM6cMG\\nEqqlqlglxf752lAxW9Mb+DSts1gMSmcJv8/PbY17xVjY+jSB7tYyktDNAoGAM2v/\\nwiS4wLinBAFG/GxZBdzP0VmFQAAPMutwGIh01CXSxNqWrPyYuSFUfGUhE1ByEdM0\\nNpF18pKqrlsnlS+RwVXbLQYroaYeiF20qyK/jx9Bq8+oZB1ehsZTF5BF40wskUDK\\noKYc4UYy9BmaFiTQ3mg/MOZWZKEB4875VzYR3VkCgYEAgUPhkUCfGc1OWru6WcPq\\n0mq3F8rCvQndyz9Jn1orXLojP1u8nJF+jCiMuVnVsc1ChwiyK652MkXjKBL6kqG+\\nHSLv/UZhvG1XJKaUB7q48yryBqpDHcNLOu11YI+Oyd+Dict6xVFrt36n3uWOLATB\\nSyZDOsqX1TEitG5BdJQHIJc=\\n-----END PRIVATE KEY-----\\n";
         return stripUnwantedDelimiters(rawKey);
     }
 
     private String getPublicKey() {
-        String rawKey = "\\r\\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAy7d/1DUA+2hxI42XxsAs\\r\\na6zcgOCFJCWfe0wMitRPnBatkx9ZUOGaZQ+UzQxSrMvjiC6C6jLNwYrsyQ6T+Ktj\\r\\nlM44IGIdjflh+GM67czaFVWpkihvnWGsC9yV591vpV5qzOTop9QzjRZ52g2xZ4Uw\\r\\ns/eNvGMJAx7cvHVQAGBPFXMufmqMNqYvP42hvuik+z+fcRO9l/7u+4YD5D8kROhi\\r\\nLGjdLgoveSojKUfFQDArvKgwlaPmm5uKw6wEzxB/dw1cOJ4mZ50n1USp2zO/OAPo\\r\\nXPZtFyCcHhZnX2aKip5sJ2WiBURSRXV9SeNhXpmbfR28BqB3kaLMG9011hhQJunA\\r\\ndQIDAQAB\\r\\n";
+        String rawKey = "-----BEGIN PUBLIC KEY-----\\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAlvp6PZ3eifvrnIV/2pNs\\ndbhYO0F5OBVheu+qzaMSZcjEkUo9uSSISXtgXBWku/DUcZ1MsEudQFP938TVRMKY\\nU9TBBNgg7NKXJUpoT1MZzfnqdewGLHiMoNBR2QuTdliTAXJ7mJvzYypWK5VLZ3R+\\n7hjsbgDNF9icuBqRxkGcK8OkhczGB2J0IZiGd9dYgQdNJ6rjx0Vw4UKQW9zvarzl\\nkhWzoNZ2Pl4KfSdDshDeuI/bbfu4vrDErjnxR65cYoGsAPW16Pqex2VTjX+DXuPK\\nTneWyKpmkcCBcOS9xxHxOCV55rJRBhGSjT2eVNoSghFP/H74qb/OdfE2krUwppj2\\nxQIDAQAB\\n-----END PUBLIC KEY-----\\n";
         return stripUnwantedDelimiters(rawKey);
     }
 
@@ -32,12 +33,11 @@ public class GSAuthRequestUtilsTest {
     }
 
     @Test
-    public void test_rsaPrivateKeyFromBase64String() {
-        // Act
-        final PrivateKey key = GSAuthRequestUtils.rsaPrivateKeyFromBase64String(getPrivateKey());
-        // Assert
+    public void test_rsaPrivateKeyFromBase64StringPKCS8() {
+        final String key = getPrivateKey();
+        final PrivateKey privateKey = GSAuthRequestUtils.rsaPrivateKeyFromBase64String(key);
         assertNotNull(key);
-        assertEquals("RSA", key.getAlgorithm());
+        assertEquals("RSA", privateKey.getAlgorithm());
     }
 
     @Test

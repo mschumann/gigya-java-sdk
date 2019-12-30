@@ -1,24 +1,28 @@
 package com.gigya.auth;
 
-import com.gigya.socialize.*;
-import io.jsonwebtoken.*;
+import com.gigya.socialize.GSArray;
+import com.gigya.socialize.GSLogger;
+import com.gigya.socialize.GSObject;
+import com.gigya.socialize.GSResponse;
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jws;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.SignatureAlgorithm;
 import org.json.JSONException;
 import org.json.JSONObject;
-import sun.security.util.DerInputStream;
-import sun.security.util.DerValue;
 
 import java.math.BigInteger;
 import java.security.KeyFactory;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.spec.PKCS8EncodedKeySpec;
-import java.security.spec.RSAPrivateCrtKeySpec;
 import java.security.spec.RSAPublicKeySpec;
 import java.security.spec.X509EncodedKeySpec;
 import java.util.*;
-import java.util.Base64;
 
 public class GSAuthRequestUtils {
+
+    public static final String VERSION = "java_auth_1.0.0";
 
     public static GSLogger logger = new GSLogger();
 
@@ -63,8 +67,6 @@ public class GSAuthRequestUtils {
      */
     private static String trimKey(String raw) {
         return raw
-                .replace("-----BEGIN RSA PRIVATE KEY-----", "") //PKCS#1
-                .replace("-----END RSA PRIVATE KEY-----", "") //PKCS#1
                 .replace("-----BEGIN PRIVATE KEY-----", "") //PKCS#8
                 .replace("-----END PRIVATE KEY-----", "") //PKCS#8
                 .replace("-----BEGIN PUBLIC KEY-----", "")
@@ -76,52 +78,15 @@ public class GSAuthRequestUtils {
 
     /**
      * Generate an RSA private key instance from given Base64 encoded String.
-     * !! This method is used only for parsing a PCKS#1 private key. Support for this method is only until Java version 10.
-     *
-     * @param encodedPrivateKey Base64 encoded private key String resource (RSA - PKCS#1).
-     * @return Generated private key instance.
-     */
-    static PrivateKey rsaPrivateKeyFromBase64String(String encodedPrivateKey) {
-        try {
-
-            DerInputStream derReader = new DerInputStream(Base64.getDecoder().decode(
-                    trimKey(encodedPrivateKey).getBytes()));
-            DerValue[] seq = derReader.getSequence(0);
-            // skip version seq[0];
-            BigInteger modulus = seq[1].getBigInteger();
-            BigInteger publicExp = seq[2].getBigInteger();
-            BigInteger privateExp = seq[3].getBigInteger();
-            BigInteger prime1 = seq[4].getBigInteger();
-            BigInteger prime2 = seq[5].getBigInteger();
-            BigInteger exp1 = seq[6].getBigInteger();
-            BigInteger exp2 = seq[7].getBigInteger();
-            BigInteger crtCoef = seq[8].getBigInteger();
-
-            RSAPrivateCrtKeySpec keySpec =
-                    new RSAPrivateCrtKeySpec(modulus, publicExp, privateExp, prime1, prime2, exp1, exp2, crtCoef);
-
-            KeyFactory keyFactory = KeyFactory.getInstance("RSA");
-            return keyFactory.generatePrivate(keySpec);
-        } catch (Exception ex) {
-            logger.write("Failed to generate RSA private key from encoded string");
-            logger.write(ex);
-            ex.printStackTrace();
-        }
-        return null;
-    }
-
-    // TODO: 2019-07-25 Rename and use this method when PrivateKey is PKCS#8 only!
-
-    /**
-     * Generate an RSA private key instance from given Base64 encoded String.
      *
      * @param encodedPrivateKey Base64 encoded private key String resource (RSA - PKCS#8).
      * @return Generated private key instance.
      */
-    static PrivateKey rsaPrivateKeyFromBase64String8(String encodedPrivateKey) {
+    static PrivateKey rsaPrivateKeyFromBase64String(String encodedPrivateKey) {
         try {
             KeyFactory kf = KeyFactory.getInstance("RSA");
-            PKCS8EncodedKeySpec keySpecPKCS8 = new PKCS8EncodedKeySpec(Base64.getDecoder().decode(encodedPrivateKey));
+            PKCS8EncodedKeySpec keySpecPKCS8 = new PKCS8EncodedKeySpec(Base64.getDecoder().decode(
+                    trimKey(encodedPrivateKey)));
             return kf.generatePrivate(keySpecPKCS8);
         } catch (Exception ex) {
             logger.write("Failed to generate RSA private key from encoded string");
