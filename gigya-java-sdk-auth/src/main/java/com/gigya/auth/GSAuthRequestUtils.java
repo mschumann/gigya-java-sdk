@@ -141,7 +141,7 @@ public class GSAuthRequestUtils {
     }
 
     /**
-     * Compost a JWT given account userKey & privateKey.
+     * Compost a JWT given account userKey and privateKey.
      *
      * @param userKey    Account user key.
      * @param privateKey Account Base64 encoded private key.
@@ -173,8 +173,8 @@ public class GSAuthRequestUtils {
     }
 
     /**
-     * Verify JWT given apiKey & secret.
-     * ApiKey & secret are required to perform a GSRequest to fetch the DC public key.
+     * Verify JWT given apiKey and secret.
+     * ApiKey and secret are required to perform a GSRequest to fetch the DC public key.
      * <p>
      * Verify Gigya Id Token.
      *
