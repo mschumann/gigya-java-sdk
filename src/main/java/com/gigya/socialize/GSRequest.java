@@ -552,7 +552,7 @@ public class GSRequest {
             boolean badRequest = (responseStatusCode >= HttpURLConnection.HTTP_BAD_REQUEST);
             InputStream input;
 
-            if (badRequest)
+            if (badRequest || conn.getInputStream() == null)
                 input = ((HttpURLConnection) conn).getErrorStream();
             else
                 input = conn.getInputStream();
@@ -560,11 +560,16 @@ public class GSRequest {
             if ("gzip".equals(conn.getContentEncoding())) {
                 input = new GZIPInputStream(input);
             }
-            rd = new BufferedReader(new InputStreamReader(input, "UTF-8"));
 
-            String line;
-            while ((line = rd.readLine()) != null) {
-                res.append(line);
+            if (input == null) {
+                res.append("<empty>")
+            } else {
+                rd = new BufferedReader(new InputStreamReader(input, "UTF-8"));
+
+                String line;
+                while ((line = rd.readLine()) != null) {
+                    res.append(line);
+                }
             }
 
             logger.write("server", conn.getHeaderField("x-server"));
