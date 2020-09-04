@@ -578,7 +578,11 @@ public class GSRequest {
                 input = ((HttpURLConnection) conn).getErrorStream();
                 if (input == null) {
                     logger.write("[NPE-1]", "error stream is null, get input stream");
-                    input = conn.getInputStream();
+                    try {
+                        input = conn.getInputStream();
+                    } catch (IOException e) {
+                        logger.write("Cannot get input stream", e.getMessage());
+                    }
                 }
             }
             else {
@@ -630,7 +634,10 @@ public class GSRequest {
             gsr.headers = conn.getHeaderFields();
 
             wr.close();
-            rd.close();
+
+            if (rd != null) {
+                rd.close();
+            }
 
             if (input != null) {
                 input.close();
