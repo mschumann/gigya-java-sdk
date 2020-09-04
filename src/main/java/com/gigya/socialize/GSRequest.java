@@ -570,13 +570,28 @@ public class GSRequest {
             wr.flush();
 
             int responseStatusCode = ((HttpURLConnection) conn).getResponseCode();
+            logger.write("http status", responseStatusCode);
             boolean badRequest = (responseStatusCode >= HttpURLConnection.HTTP_BAD_REQUEST);
             InputStream input;
 
-            if (badRequest || conn.getInputStream() == null)
+            if (badRequest) {
                 input = ((HttpURLConnection) conn).getErrorStream();
-            else
+                if (input == null) {
+                    logger.write("[NPE-1]", "error stream is null, get input stream");
+                    input = conn.getInputStream();
+                }
+            }
+            else {
                 input = conn.getInputStream();
+                if (input == null) {
+                    logger.write("[NPE-2]", "input stream is null, get error stream");
+                    input = ((HttpURLConnection) conn).getErrorStream();
+                }
+            }
+
+            if (input == null) {
+                logger.write("[NPE-3]", "input stream is still null");
+            }
 
             if ("gzip".equals(conn.getContentEncoding())) {
                 input = new GZIPInputStream(input);
