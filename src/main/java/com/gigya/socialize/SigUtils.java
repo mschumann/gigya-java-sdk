@@ -30,6 +30,22 @@ public class SigUtils {
     }
 
     /**
+     * Use this method to verify the authenticity of a <a href="http://developers.gigya.com/display/GD/socialize.getUserInfo+REST">socialize.getUserInfo</a> API method response, to make sure it is in fact originating from Gigya, and prevent fraud.
+     * The "socialize.getUserInfo" API method response data include the following fields: UID, signatureTimestamp (a timestamp) and UIDSignature (a cryptographic signature).
+     * Pass these fields as the corresponding parameters of this method, along with your partner's "<strong>Secret Key</strong>". Your secret key (provided in BASE64 encoding) is located at the bottom of the <a href="http://www.gigya.com/site/partners/wfsocapi.aspx#&amp;&amp;userstate=SiteSetup">Site Setup</a> page on Gigya's website.
+     * The return value of the method indicates if the signature is valid (thus, originating from Gigya) or not.
+     *
+     * @param UID        pass the <em>UID</em> field returned by the "socialize.getUserInfo" API method response
+     * @param timestamp  pass the <em>signatureTimestamp</em> field returned by the "socialize.getUserInfo" API method response
+     * @param secret     your partner's "<strong>Secret Key</strong>", obtained from Gigya's website.
+     * @param signature  pass the <em>UIDSignature</em> field returned by the "socialize.getUserInfo" API method response
+     * @param expiration pass the signature expiration time in seconds to validate against the signature timestamp
+     */
+    public static boolean validateUserSignature(String UID, String timestamp, String secret, String signature, int expiration) throws InvalidKeyException, UnsupportedEncodingException {
+        return !signatureTimestampExpired(timestamp, expiration) && validateUserSignature(UID, timestamp, secret, signature);
+    }
+
+    /**
      * Use this method to verify the authenticity of a <a href="http://developers.gigya.com/display/GD/socialize.getFriendsInfo+REST">socialize.getFriendsInfo</a> API method response, to make sure it is in fact originating from Gigya, and prevent fraud.
      * The "socialize.getFriendsInfo" API method response data include the following fields: UID, signatureTimestamp (a timestamp) and friendshipSignature (a cryptographic signature).
      * Pass these fields as the corresponding parameters of this method, along with your partner's "<strong>Secret Key</strong>". Your secret key (provided in BASE64 encoding) is located at the bottom of the <a href="http://www.gigya.com/site/partners/wfsocapi.aspx#&amp;&amp;userstate=SiteSetup">Site Setup</a> page on Gigya's website.
@@ -44,6 +60,23 @@ public class SigUtils {
         String expectedSig = calcSignature("HmacSHA1", timestamp + "_" + friendUID + "_" + UID, Base64.decode(secret));
         return expectedSig.equals(signature);
     }
+
+    /**
+     * Use this method to verify the authenticity of a <a href="http://developers.gigya.com/display/GD/socialize.getFriendsInfo+REST">socialize.getFriendsInfo</a> API method response, to make sure it is in fact originating from Gigya, and prevent fraud.
+     * The "socialize.getFriendsInfo" API method response data include the following fields: UID, signatureTimestamp (a timestamp) and friendshipSignature (a cryptographic signature).
+     * Pass these fields as the corresponding parameters of this method, along with your partner's "<strong>Secret Key</strong>". Your secret key (provided in BASE64 encoding) is located at the bottom of the <a href="http://www.gigya.com/site/partners/wfsocapi.aspx#&amp;&amp;userstate=SiteSetup">Site Setup</a> page on Gigya's website.
+     * The return value of the method indicates if the signature is valid (thus, originating from Gigya) or not.
+     *
+     * @param UID        pass the <em>UID</em> field returned by the "socialize.getFriendsInfo" API method response
+     * @param timestamp  pass the <em>signatureTimestamp</em> field returned by the "socialize.getFriendsInfo" API method response
+     * @param secret     your partner's "<strong>Secret Key</strong>", obtained from Gigya's website.
+     * @param signature  pass the <em>friendshipSignature</em> field returned by the "socialize.getFriendsInfo" API method response
+     * @param expiration pass the signature expiration time in seconds to validate against the signature timestamp
+     */
+    public static boolean validateFriendSignature(String UID, String timestamp, String friendUID, String secret, String signature, int expiration) throws InvalidKeyException, UnsupportedEncodingException {
+        return !signatureTimestampExpired(timestamp, expiration) && validateFriendSignature(UID, timestamp, friendUID, secret, signature);
+    }
+
 
     public static String getOAuth1Signature(String baseString, String secret) throws InvalidKeyException, MalformedURLException, UnsupportedEncodingException {
 
@@ -141,5 +174,11 @@ public class SigUtils {
         String signedExpString = calcSignature("HmacSHA1", unsignedExpString, Base64.decode(secret)); // sign the base string using the secret key
 
         return expirationTimeUnix + "_" + userKey + "_" + signedExpString;
+    }
+
+    public static boolean signatureTimestampExpired(String signatureTimestamp, int expiration) {
+        long timestamp = Long.parseLong(signatureTimestamp);
+        long now = System.currentTimeMillis() / 1000; // In seconds.
+        return Math.abs(now - timestamp) > expiration;
     }
 }
